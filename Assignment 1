@@ -1,10 +1,10 @@
-select CustomerId , count(OrderDate) as OrderCount 
-from [dbo].[Order] 
+Select CustomerId , Count(OrderDate) as OrderCount 
+From [dbo].[Order] 
 
-where Year(OrderDate) between YEAR('2017') and YEAR('2018')
+Where Year(OrderDate) between YEAR('2017') and YEAR('2018')
 
-and ShippedDate IS NULL
+And ShippedDate IS NULL
 
-group by CustomerId
+Group by CustomerId
 
-order by CustomerId
+Order by CustomerId
