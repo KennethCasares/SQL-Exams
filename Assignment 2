@@ -14,7 +14,7 @@ UPDATE Product_20210908
 SET ListPrice = (ListPrice * 1.1)
 WHERE NOT ProductName  Like  '%Heller%' AND	  NOT ProductName  Like  '%Sun Bicycles%'
 
---For Checking Only Uncomment the code for checking
+--For Checking Only. Uncomment the code below for checking
 --You Can check if the 20% increase is added correctly here
 
 --SELECT * FROM Product 
