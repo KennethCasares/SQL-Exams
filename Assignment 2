@@ -1,0 +1,39 @@
+--drop table Product_20210908
+
+SELECT * INTO Product_20210908
+FROM Product
+WHERE ModelYear <> 2016
+
+--Adding 20%
+UPDATE Product_20210908
+SET ListPrice = (ListPrice * 1.2)
+WHERE (ProductName Like  '%Heller%'  OR  ProductName Like  '%Sun Bicycles%')
+
+--Adding 10%
+UPDATE Product_20210908
+SET ListPrice = (ListPrice * 1.1)
+WHERE NOT ProductName  Like  '%Heller%' AND	  NOT ProductName  Like  '%Sun Bicycles%'
+
+--For Checking Only Uncomment the code for checking
+--You Can check if the 20% increase is added correctly here
+
+--SELECT * FROM Product 
+--WHERE ModelYear <> 2016 and
+--ProductName Like  '%Heller%'  
+--OR  ProductName Like  '%Sun Bicycles%' ORDER BY ProductName
+
+--SELECT * FROM Product_20210908 
+--WHERE ProductName Like  '%Heller%'
+--OR	  ProductName Like  '%Sun Bicycles%' ORDER BY ProductName
+
+--You Can check if the 10% increase is added correctly here
+
+--SELECT * FROM Product 
+--WHERE ModelYear <> 2016 and
+--NOT ProductName  Like  '%Heller%'
+--AND	  NOT ProductName  Like  '%Sun Bicycles%' ORDER BY ProductName
+
+--SELECT * FROM Product_20210908 
+--WHERE NOT ProductName  Like  '%Heller%'
+--AND	  NOT ProductName  Like  '%Sun Bicycles%' ORDER BY ProductName
+
