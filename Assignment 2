@@ -1,0 +1,18 @@
+SELECT 
+ProductName, 
+COUNT(Quantity) AS TotalQuantity
+
+FROM [ORDER] O
+LEFT JOIN ORDERITEM OI ON OI.OrderId = O.OrderId 
+LEFT JOIN Customer C ON C.CustomerId = O.CustomerId
+LEFT JOIN PRODUCT P ON P.ProductId = OI.ProductId
+
+WHERE C.State = 'TX'
+AND NOT O.OrderDate  IS NULL
+
+GROUP BY ProductName
+
+HAVING COUNT(Quantity) > 10
+
+ORDER BY COUNT(Quantity) DESC
+
