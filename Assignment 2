@@ -1,3 +1,4 @@
+---------------------------------------------------------1
 SELECT 
 ProductName, 
 COUNT(Quantity) AS TotalQuantity
@@ -15,4 +16,109 @@ GROUP BY ProductName
 HAVING COUNT(Quantity) > 10
 
 ORDER BY COUNT(Quantity) DESC
+
+----------------------------------------------------------2
+
+SELECT 
+REPLACE(CategoryName, 'Bikes', 'Bicycles' ) AS CategoryName,
+COUNT(Quantity) AS TotalQuantity
+
+FROM [ORDER] O
+LEFT JOIN ORDERITEM OI ON OI.OrderId = O.OrderId 
+LEFT JOIN PRODUCT P ON P.ProductId = OI.ProductId
+LEFT JOIN CATEGORY C ON C.CategoryId = P.CategoryId 
+
+GROUP BY CategoryName
+
+ORDER BY COUNT(Quantity) DESC
+
+-----------------------------------------------------------3
+
+SELECT 
+ProductName, 
+COUNT(Quantity) AS TotalQuantity
+
+INTO PRODUCT_SOURCE
+
+FROM [ORDER] O
+LEFT JOIN ORDERITEM OI ON OI.OrderId = O.OrderId 
+LEFT JOIN Customer C ON C.CustomerId = O.CustomerId
+LEFT JOIN PRODUCT P ON P.ProductId = OI.ProductId
+
+WHERE C.State = 'TX'
+AND NOT O.OrderDate  IS NULL
+
+GROUP BY ProductName
+
+HAVING COUNT(Quantity) > 10
+
+ORDER BY COUNT(Quantity) DESC
+
+
+SELECT 
+REPLACE(CategoryName, 'Bikes', 'Bicycles' ) AS CategoryName,
+COUNT(Quantity) AS TotalQuantity
+
+INTO PRODUCT_TARGET
+
+FROM [ORDER] O
+LEFT JOIN ORDERITEM OI ON OI.OrderId = O.OrderId 
+LEFT JOIN PRODUCT P ON P.ProductId = OI.ProductId
+LEFT JOIN CATEGORY C ON C.CategoryId = P.CategoryId 
+
+GROUP BY CategoryName
+
+ORDER BY COUNT(Quantity) DESC
+
+MERGE PRODUCT_TARGET AS T
+USING PRODUCT_SOURCE AS S
+	ON (S.ProductName = T.CategoryName)
+WHEN NOT MATCHED THEN 
+	INSERT VALUES (S.ProductName,S.TotalQuantity);
+
+SELECT * FROM PRODUCT_TARGET ORDER BY TotalQuantity DESC
+
+---------------------------------------------------------------4
+
+WITH CTE (SortMonth,OrderYear,OrderMonth,ProductName,TotalQuantity ) AS (
+
+SELECT
+Month(OrderDate)AS SortMonth,
+YEAR(OrderDate)AS OrderYear,
+DATENAME(month, OrderDate) AS OrderMonth,
+ProductName,
+COUNT(Quantity) AS TotalQuantity
+
+FROM [ORDER] O
+LEFT JOIN ORDERITEM OI ON OI.OrderId = O.OrderId 
+LEFT JOIN PRODUCT P ON P.ProductId = OI.ProductId
+LEFT JOIN CATEGORY C ON C.CategoryId = P.CategoryId 
+
+GROUP BY OrderDate,ProductName 
+
+),
+
+CTE2 AS (
+
+SELECT RANK() OVER (PARTITION BY OrderYear ORDER BY TotalQuantity DESC) AS RANKID,
+
+SortMonth,
+OrderYear,
+OrderMonth,
+ProductName,
+TotalQuantity
+
+FROM CTE
+)
+SELECT 
+
+RANKID,
+OrderYear,
+OrderMonth,
+ProductName,
+TotalQuantity
+
+FROM CTE2 
+WHERE RANKID=1
+ORDER BY OrderYear , SortMonth, RANKID 
 
