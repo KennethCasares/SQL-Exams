@@ -1,0 +1,205 @@
+--1
+SELECT 
+S.StoreId, StoreName 
+FROM store S
+LEFT JOIN [ORDER] O ON O.StoreId = S.StoreId 
+WHERE OrderDate IS NULL
+
+--2
+SELECT 
+P.ProductId,
+ProductName,
+BrandName,
+CategoryName,
+SUM(Quantity) AS Quantity
+
+FROM STORE S
+LEFT JOIN [ORDER] O ON O.StoreId = S.StoreId 
+LEFT JOIN OrderItem OI ON OI.OrderId=O.OrderId 
+LEFT JOIN PRODUCT P ON P.ProductId = OI.ProductId
+LEFT JOIN BRAND B ON B.BrandId=P.BrandId
+LEFT JOIN CATEGORY C ON C.CategoryId = P.CategoryId 
+
+WHERE ModelYear BETWEEN '2017' AND '2018'
+AND S.StoreId = 2
+
+GROUP BY 
+P.ProductId,
+ProductName,
+BrandName,
+CategoryName
+
+ORDER BY  Quantity DESC, ProductName DESC, BrandName DESC, CategoryName DESC
+
+--3
+SELECT 
+StoreName,
+YEAR(OrderDate)AS OrderYear,
+COUNT(OrderDate) AS OrderCount
+
+FROM STORE S
+INNER JOIN [ORDER] O ON O.StoreId = S.StoreId 
+INNER JOIN OrderItem OI ON OI.OrderId=O.OrderId 
+
+GROUP BY StoreName, YEAR(OrderDate)
+
+ORDER BY  StoreName, YEAR(OrderDate) DESC
+
+--4
+WITH CTE AS (
+
+SELECT DISTINCT
+  ROW_NUMBER() OVER (
+			PARTITION BY BrandName
+					ORDER BY P.ListPrice DESC) AS RANKING,
+BrandName,
+P.ProductId,
+ProductName,
+P.ListPrice
+
+FROM STORE S
+INNER JOIN [ORDER] O ON O.StoreId = S.StoreId 
+INNER JOIN OrderItem OI ON OI.OrderId=O.OrderId 
+INNER JOIN PRODUCT P ON P.ProductId = OI.ProductId
+INNER JOIN BRAND B ON B.BrandId=P.BrandId
+)
+SELECT 
+BrandName,
+ProductId,
+ProductName,
+ListPrice
+FROM CTE WHERE RANKING <= 5
+
+ORDER BY BrandName, ListPrice DESC
+
+--5
+DECLARE @ROW_ID INT ,
+@StoreName VARCHAR(20),
+@OrderYear VARCHAR(10),
+@OrderCount INT;
+
+SELECT ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS ROW_ID,
+	StoreName,
+	YEAR(OrderDate)AS OrderYear,
+	COUNT(OrderDate) AS OrderCount
+	INTO Product_2021004
+		FROM STORE S
+		INNER JOIN [ORDER] O ON O.StoreId = S.StoreId 
+		INNER JOIN OrderItem OI ON OI.OrderId=O.OrderId 
+		GROUP BY StoreName, YEAR(OrderDate)
+		ORDER BY  StoreName, YEAR(OrderDate) DESC
+
+PRINT '------------------------STORE DETAILS--------------------';
+
+DECLARE CURSOR_STORE CURSOR FOR
+SELECT StoreName, OrderYear, OrderCount FROM Product_2021004 ORDER BY StoreName
+
+OPEN CURSOR_STORE
+
+FETCH NEXT FROM CURSOR_STORE
+INTO @StoreName,@OrderYear,@OrderCount
+
+PRINT 'Store Name			Order Year		Order Count'
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+	    PRINT  @StoreName +'			'+
+        @OrderYear  +'				'+
+		CAST(@OrderCount as varchar(MAX))
+
+    FETCH NEXT FROM CURSOR_STORE
+INTO @StoreName,@OrderYear,@OrderCount
+
+END
+CLOSE CURSOR_STORE;
+DEALLOCATE CURSOR_STORE;
+DROP TABLE Product_2021004
+
+--6
+DECLARE @Counter INT 
+SET @Counter=1
+
+WHILE ( @Counter <= 10)
+BEGIN
+	WHILE ( @Counter <= 10)
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,1) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*1)
+			SET @Counter  = @Counter  + 1 
+	END
+	SET @Counter = 1
+
+	WHILE ( @Counter <= 10)
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,2) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*2)
+			SET @Counter  = @Counter  + 1 
+	END
+	SET @Counter = 1
+
+	WHILE ( @Counter <= 10)
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,3) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*3)
+			SET @Counter  = @Counter  + 1 
+	END
+	SET @Counter = 1
+
+	WHILE ( @Counter <= 10)
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,4) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*4)
+			SET @Counter  = @Counter  + 1 
+	END
+		SET @Counter = 1
+
+	WHILE ( @Counter <= 10)
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,5) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*5)
+			SET @Counter  = @Counter  + 1 
+	END
+	SET @Counter = 1
+
+	WHILE ( @Counter <= 10)
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,6) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*6)
+			SET @Counter  = @Counter  + 1 
+	END
+	SET @Counter = 1
+
+	WHILE ( @Counter <= 10)
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,7) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*7)
+			SET @Counter  = @Counter  + 1 
+	END
+	SET @Counter = 1
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,8) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*8)
+			SET @Counter  = @Counter  + 1 
+	END
+	SET @Counter = 1
+
+	WHILE ( @Counter <= 10)
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,9) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*9)
+			SET @Counter  = @Counter  + 1 
+	END
+	SET @Counter = 1
+
+	WHILE ( @Counter <= 10)
+	BEGIN
+		    PRINT  CONVERT(VARCHAR,10) + '  *  ' +  CONVERT(VARCHAR,@Counter) + ' = ' + CONVERT(VARCHAR,@Counter*10)
+			SET @Counter  = @Counter  + 1 
+	END
+END
+
+--7
+SELECT *
+FROM (SELECT YEAR(OrderDate) [Year], 
+       DATENAME(MONTH, OrderDate) [Month], 
+       SUM(ISNULL(ListPrice,0)) [Sales]
+      FROM STORE S
+INNER JOIN [ORDER] O ON O.StoreId = S.StoreId 
+INNER JOIN OrderItem OI ON OI.OrderId=O.OrderId 
+GROUP BY StoreName, YEAR(OrderDate), 
+      DATENAME(MONTH, OrderDate)) AS MontlySalesData
+PIVOT( SUM([Sales])   
+    FOR Month IN ([January],[February],[March],[April],[May],
+    [June],[July],[August],[September],[October],[November],
+    [December])) AS MNamePivot
