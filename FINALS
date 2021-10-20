@@ -1,0 +1,189 @@
+--1========================================================================================
+CREATE PROC CreateNewBrandAndMoveProducts (
+@New_Brand_Name VARCHAR(MAX),
+@Old_Brand_Id INT
+)
+AS
+--DECLARE
+--@New_Brand_Name VARCHAR(MAX) = 'Electra',
+--@Old_Brand_Id INT = 1
+
+BEGIN TRY
+	BEGIN TRANSACTION
+		IF EXISTS (SELECT TOP 1 *  FROM BRAND WHERE BRANDNAME = @New_Brand_Name)
+
+		INSERT INTO BRAND (BRANDNAME) 
+		VALUES (@New_Brand_Name)
+
+		UPDATE	PRODUCT 
+		SET		BRANDID = @@IDENTITY
+		WHERE	BRANDID = @New_Brand_Name
+
+		DELETE	BRAND
+		WHERE	BRANDID = @New_Brand_Name
+	COMMIT TRANSACTION
+END TRY
+BEGIN CATCH
+	ROLLBACK TRANSACTION
+END CATCH
+
+--2========================================================================================
+CREATE PROC GetProduct_List (
+@Product_Name	VARCHAR(MAX) = NULL ,
+@Brand_ID		INT = NULL,
+@Category_ID	INT = NULL,
+@Model_Year		INT = NULL
+)
+AS
+
+DECLARE 
+@P_SIZE			INT = 10
+
+SELECT 
+
+ProductId		,
+ProductName		,
+B.BrandId		,
+BrandName		,
+C.CategoryId	,
+CategoryName	,
+ModelYear		,
+ListPrice		
+
+FROM PRODUCT P
+INNER JOIN	Category C	ON	P.CategoryId	= C.CategoryId 
+INNER JOIN	Brand B		ON	B.BrandId		= P.BrandId 
+
+WHERE 
+(ProductName IS NULL OR ProductName LIKE ( '%' + @Product_Name + '%' ))	
+OR (P.BrandId	IS NULL OR	P.BrandId = @Brand_ID)			
+OR (C.CategoryId	IS NULL OR	C.CategoryId = @Category_ID)	
+OR (ModelYear	IS NULL OR	ModelYear = @Model_Year)	
+
+ORDER BY ModelYear DESC, ListPrice DESC, ProductName DESC
+
+OFFSET @P_SIZE  ROWS FETCH NEXT @P_SIZE ROWS ONLY
+
+--3========================================================================================
+DECLARE @CategoryId INT = 6
+DECLARE @CategoryName VARCHAR(255) = 'Mountain Bikes'
+
+SELECT * INTO Product_20211020 FROM Product
+ 
+IF(@CategoryName = 'Children Bicycles' 
+    OR @CategoryName = 'Cyclocross Bicycles' 
+    OR @CategoryName = 'Road Bikes') 
+    BEGIN 
+        UPDATE  Product_20211020 
+        SET     ListPrice = (ListPrice * 1.2) 
+        WHERE   CategoryId = @CategoryId; 
+END; 
+ 
+IF(@CategoryName = 'Comfort Bicycles' 
+    OR @CategoryName = 'Cruisers Bicycles' 
+    OR @CategoryName = 'Electric Bikes') 
+    BEGIN 
+        UPDATE  Product_20211020 
+        SET     ListPrice = (ListPrice * 1.7) 
+        WHERE   CategoryId = @CategoryId; 
+END; 
+ 
+IF(@CategoryName = 'Mountain Bikes') 
+    BEGIN 
+        UPDATE  Product_20211020 
+        SET     ListPrice = (ListPrice * 1.4) 
+        WHERE   CategoryId = @CategoryId; 
+END; 
+         
+
+SELECT * FROM Product_20211020 WHERE CategoryId = @CategoryId AND ModelYear = 2016
+SELECT * FROM Product WHERE CategoryId = @CategoryId AND ModelYear = 2016
+DROP TABLE Product_20211020 
+
+--4========================================================================================
+
+--A==============================================================
+CREATE TABLE RANKING (
+ID	INT		IDENTITY (1, 1) NOT NULL,
+DESCRIPTION NVARCHAR(MAX) NOT NULL,
+PRIMARY KEY CLUSTERED (ID)
+)
+
+--B==============================================================
+SET IDENTITY_INSERT RANKING ON 
+INSERT INTO RANKING (ID, DESCRIPTION) VALUES (1, 'Inactive')
+INSERT INTO RANKING (ID, DESCRIPTION) VALUES (2, 'Bronze')
+INSERT INTO RANKING (ID, DESCRIPTION) VALUES (3, 'Silver')
+INSERT INTO RANKING (ID, DESCRIPTION) VALUES (4, 'Gold')
+INSERT INTO RANKING (ID, DESCRIPTION) VALUES (5, 'Platinum')
+
+--C==============================================================
+ALTER TABLE CUSTOMER ADD RankingID	INT
+ALTER TABLE CUSTOMER
+ADD CONSTRAINT FK_CUSTOMER_RANKING
+FOREIGN KEY (RankingID) REFERENCES RANKING(ID)
+
+--D==============================================================
+CREATE PROC uspRankCustomers 
+AS
+
+WITH CTE_CUSTOMER_ORDER AS
+(
+SELECT C.CustomerId,  SUM(ISNULL(I.Quantity,0) * ISNULL(I.ListPrice,0)) AS TOTAL_AMOUNT
+		
+FROM CUSTOMER C
+LEFT JOIN [ORDER] O ON O.CUSTOMERID = C.CUSTOMERID
+LEFT JOIN ORDERITEM I ON I.ORDERID = O.ORDERID
+GROUP BY C.CustomerId
+)
+
+UPDATE	C 
+SET		C.RANKINGID = CASE 
+	WHEN TOTAL_AMOUNT = 0 THEN 1
+	WHEN TOTAL_AMOUNT < 1000 THEN 2
+	WHEN TOTAL_AMOUNT < 2000 THEN 3
+	WHEN TOTAL_AMOUNT < 3000 THEN 4
+	WHEN TOTAL_AMOUNT >= 3000 THEN 5
+END
+
+FROM Customer C
+INNER JOIN CTE_CUSTOMER_ORDER CO ON CO.CustomerId = C.CustomerId
+
+--E==============================================================
+CREATE VIEW vwCustomerOrders AS
+
+SELECT	C.CustomerId,
+		FirstName,
+		LastName,
+		SUM(ISNULL(I.Quantity,0) * ISNULL(I.ListPrice,0)) AS TOTAL_AMOUNT,
+		DESCRIPTION
+
+FROM CUSTOMER C
+LEFT JOIN RANKING R		ON C.RANKINGID = R.ID
+LEFT JOIN [ORDER] O		ON C.CUSTOMERID = O.CUSTOMERID
+LEFT JOIN ORDERITEM I	ON I.ORDERID = O.ORDERID
+
+GROUP BY 
+	C.CustomerId,
+	FirstName,
+	LastName,
+	DESCRIPTION
+
+--5========================================================================================
+WITH CTE AS (
+	SELECT	STAFFID,
+			FIRSTNAME + ' ' + LASTNAME AS FULLNAME,
+			CAST(FIRSTNAME + ' ' + LASTNAME + ', ' AS VARCHAR(MAX)) AS HIERARCHY
+	FROM STAFF WHERE ManagerId IS NULL 
+
+UNION ALL
+
+	SELECT	S.STAFFID,
+			FIRSTNAME + ' ' + LASTNAME AS FULLNAME,
+			CAST(HIERARCHY + FIRSTNAME + ' ' + LASTNAME + ', ' AS VARCHAR(MAX))
+	FROM STAFF S
+	INNER JOIN CTE C ON C.StaffId = S.MANAGERID
+)
+SELECT STAFFID,FULLNAME, LEFT (HIERARCHY, LEN(HIERARCHY )  ) AS EMPLOYEE_HIERARCHY
+FROM CTE C ORDER BY STAFFID 
+		
